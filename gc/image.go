@@ -10,6 +10,7 @@ import (
 
 	"docker.io/go-docker/api/types"
 	"docker.io/go-docker/api/types/filters"
+	units "github.com/docker/go-units"
 	"github.com/hashicorp/go-multierror"
 	"github.com/rs/zerolog/log"
 )
@@ -53,9 +54,13 @@ func (c *collector) collectImages(ctx context.Context) error {
 
 	if size < c.threshold {
 		logger.Debug().
-			Int64("size", df.LayersSize).
-			Int64("threshold", c.threshold).
-			Msg("layer cache below threshold")
+			Str("size", units.HumanSize(
+				float64(df.LayersSize),
+			)).
+			Str("threshold", units.HumanSize(
+				float64(c.threshold),
+			)).
+			Msg("image cache below threshold")
 		return nil
 	}
 
@@ -102,7 +107,9 @@ func (c *collector) collectImages(ctx context.Context) error {
 		}
 
 		logger.Info().
-			Int64("size", image.Size).
+			Str("size", units.HumanSize(
+				float64(image.Size),
+			)).
 			Str("id", image.ID).
 			Strs("image", info.RepoTags).
 			Msg("image removed")
@@ -114,8 +121,9 @@ func (c *collector) collectImages(ctx context.Context) error {
 	}
 
 	logger.Debug().
-		Int64("size", size).
-		Int64("threshold", c.threshold).
+		Str("size", units.HumanSize(
+			float64(size),
+		)).
 		Msg("done pruning named images")
 
 	return result
