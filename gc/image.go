@@ -92,6 +92,10 @@ func (c *collector) collectImages(ctx context.Context) error {
 
 		logger.Debug().
 			Str("id", image.ID).
+			Str("size", units.HumanSize(
+				float64(image.Size),
+			)).
+			Int64("created", image.Created).
 			Strs("image", info.RepoTags).
 			Msg("remove image")
 
@@ -107,9 +111,6 @@ func (c *collector) collectImages(ctx context.Context) error {
 		}
 
 		logger.Info().
-			Str("size", units.HumanSize(
-				float64(image.Size),
-			)).
 			Str("id", image.ID).
 			Strs("image", info.RepoTags).
 			Msg("image removed")
