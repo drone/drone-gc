@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/drone/drone-gc/gc/internal"
+	"github.com/rs/zerolog/log"
 
 	"docker.io/go-docker"
 	"docker.io/go-docker/api/types"
@@ -36,6 +37,10 @@ func (l *listener) listen(ctx context.Context) error {
 }
 
 func (l *listener) do(ctx context.Context) error {
+	logger := log.Ctx(ctx)
+	logger.Info().
+		Msg("listening for docker events")
+
 	eventc, errc := l.client.Events(ctx, eventOpts)
 	for {
 		select {
@@ -47,6 +52,10 @@ func (l *listener) do(ctx context.Context) error {
 			if event.Action == "create" && event.Type == "container" {
 				name := internal.ExpandImage(event.From)
 				l.cache.push(name, time.Now().Unix())
+
+				logger.Debug().
+					Str("image", event.From).
+					Msg("image used, update cache")
 			}
 		}
 	}

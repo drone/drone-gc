@@ -6,7 +6,7 @@ Installation:
 
 ```
 docker run -d \
-  --volume=/var/lib/docker.sock:/var/lib/docker.sock \
+  --volume=/var/run/docker.sock:/var/run/docker.sock \
   --env=GC_DEBUG=true \
   --env=GC_CACHE=5gb \
   --env=GC_INTERVAL=5m \
