@@ -31,7 +31,15 @@ func (l *listener) listen(ctx context.Context) error {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			l.do(ctx)
+			err := l.do(ctx)
+			if err != nil {
+				select {
+				case <-ctx.Done():
+					return ctx.Err()
+				case <-time.After(time.Minute):
+					// wait before reconnecting
+				}
+			}
 		}
 	}
 }
