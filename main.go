@@ -14,6 +14,7 @@ import (
 	"github.com/drone/signal"
 
 	"docker.io/go-docker"
+	"github.com/docker/go-units"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -27,7 +28,7 @@ type config struct {
 	Images     []string      `envconfig:"GC_IGNORE_IMAGES"`
 	Containers []string      `envconfig:"GC_IGNORE_CONTAINERS"`
 	Interval   time.Duration `envconfig:"GC_INTERVAL" default:"5m"`
-	Threshold  int64         `envconfig:"GC_THRESHOLD" default:"5000000000"`
+	Cache      string        `envconfig:"GC_CACHE" default:"5gb"`
 }
 
 func main() {
@@ -44,6 +45,12 @@ func main() {
 			Msg("Cannot create Docker client")
 	}
 
+	size, err := units.FromHumanSize(cfg.Cache)
+	if err != nil {
+		log.Fatal().Err(err).
+			Msg("Cannot parse cache size")
+	}
+
 	initLogger(cfg)
 	ctx := log.Logger.WithContext(context.Background())
 	ctx = signal.WithContext(ctx)
@@ -52,7 +59,7 @@ func main() {
 		cache.Wrap(ctx, client),
 		gc.WithImageWhitelist(gc.ReservedImages),
 		gc.WithImageWhitelist(cfg.Images),
-		gc.WithThreshold(cfg.Threshold),
+		gc.WithThreshold(size),
 		gc.WithWhitelist(gc.ReservedNames),
 		gc.WithWhitelist(cfg.Containers),
 	)
@@ -62,7 +69,8 @@ func main() {
 		log.Info().
 			Strs("ignore-containers", cfg.Containers).
 			Strs("ignore-images", cfg.Images).
-			Dur("interval", cfg.Interval).
+			Str("cache", cfg.Cache).
+			Str("interval", units.HumanDuration(cfg.Interval)).
 			Msg("starting the garbage collector")
 
 		gc.Schedule(ctx, collector, cfg.Interval)
