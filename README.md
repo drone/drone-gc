@@ -11,7 +11,7 @@ docker run -d \
   --env=GC_CACHE=5gb \
   --env=GC_INTERVAL=5m \
   --restart=always \
-  --name=gc drone-gc
+  --name=gc drone/gc
 ```
 
 Configuration:
