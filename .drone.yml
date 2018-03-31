@@ -1,0 +1,24 @@
+workspace:
+  base: /go
+  path: src/github.com/drone/drone-gc
+
+pipeline:
+  test:
+    image: golang
+    environment:
+    commands:
+      - go get -u github.com/golang/dep/cmd/dep
+      - dep ensure
+      - go test -v -cover ./...
+
+  build:
+    image: golang
+    commands: sh .drone.sh
+
+  publish:
+    image: plugins/docker
+    repo: drone/gc
+    auto_tag: true
+    secrets: [ docker_username, docker_password ]
+    when:
+      event: [ push, tag ]
