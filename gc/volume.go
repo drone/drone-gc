@@ -31,6 +31,7 @@ func (c *collector) collectVolumes(ctx context.Context) error {
 		if err != nil {
 			logger.Error().
 				Err(err).
+				Str("name", v.Name).
 				Msg("invalid date time format")
 			result = multierror.Append(result, err)
 			continue
