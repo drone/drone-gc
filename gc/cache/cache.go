@@ -7,8 +7,6 @@ package cache
 import (
 	"sort"
 	"sync"
-
-	"docker.io/go-docker/api/types"
 )
 
 // DefaultCacheSize is the default size of the LFRU cache.
@@ -18,33 +16,41 @@ type cache struct {
 	mu sync.Mutex
 
 	limit int
-	list  []*types.ImageSummary
-	index map[string]*types.ImageSummary
+	list  []*item
+	index map[string]*item
+}
+
+type item struct {
+	Name string
+	Hits int
+	Last int64
 }
 
 func newCache(limit int) *cache {
 	return &cache{
 		limit: limit,
-		list:  []*types.ImageSummary{},
-		index: make(map[string]*types.ImageSummary),
+		list:  []*item{},
+		index: make(map[string]*item),
 	}
 }
 
 func (c *cache) push(name string, value int64) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	image, ok := c.index[name]
+	i, ok := c.index[name]
 	if ok {
-		image.Created = value
+		i.Last = value
+		i.Hits++
 	} else {
-		image = &types.ImageSummary{
-			RepoTags: []string{name},
-			Created:  value,
+		i = &item{
+			Name: name,
+			Hits: 1,
+			Last: value,
 		}
-		c.list = append(c.list, image)
-		c.index[name] = image
+		c.list = append(c.list, i)
+		c.index[name] = i
 	}
-	sort.Sort(byCreatedAsc(c.list))
+	sort.Sort(byLastUsed(c.list))
 	if len(c.list) > c.limit {
 		c.list = c.list[:c.limit]
 	}
@@ -54,7 +60,13 @@ func (c *cache) find(name string) (v int64, ok bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if item, ok := c.index[name]; ok {
-		return item.Created, true
+		return item.Last, true
 	}
 	return
 }
+
+type byLastUsed []*item
+
+func (a byLastUsed) Len() int           { return len(a) }
+func (a byLastUsed) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a byLastUsed) Less(i, j int) bool { return a[i].Last > a[j].Last }

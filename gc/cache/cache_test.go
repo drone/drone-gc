@@ -7,7 +7,6 @@ package cache
 import (
 	"testing"
 
-	"docker.io/go-docker/api/types"
 	"github.com/google/go-cmp/cmp"
 )
 
@@ -19,31 +18,38 @@ func TestCache(t *testing.T) {
 	c.push("golang:1.9", 1192233603)
 	c.push("golang:1.8", 1192233602)
 	c.push("golang:1.7", 1192233601)
+	c.push("golang:1.7", 1192233601) // bump hit count x2
+	c.push("golang:1.7", 1192233601) // bump hit count x3
 
 	if got, want := len(c.list), 5; got != want {
 		t.Errorf("Want %d items in the cache, got %d", want, got)
 	}
 
-	want := []*types.ImageSummary{
-		&types.ImageSummary{
-			Created:  1192233603,
-			RepoTags: []string{"golang:1.9"},
+	want := []*item{
+		&item{
+			Last: 1192233603,
+			Hits: 1,
+			Name: "golang:1.9",
 		},
-		&types.ImageSummary{
-			Created:  1192233602,
-			RepoTags: []string{"golang:1.8"},
+		&item{
+			Last: 1192233602,
+			Hits: 1,
+			Name: "golang:1.8",
 		},
-		&types.ImageSummary{
-			Created:  1192233601,
-			RepoTags: []string{"golang:1.7"},
+		&item{
+			Last: 1192233601,
+			Hits: 3,
+			Name: "golang:1.7",
 		},
-		&types.ImageSummary{
-			Created:  1192233600,
-			RepoTags: []string{"golang:1"},
+		&item{
+			Last: 1192233600,
+			Hits: 1,
+			Name: "golang:1",
 		},
-		&types.ImageSummary{
-			Created:  420681600,
-			RepoTags: []string{"busybox:latest"},
+		&item{
+			Last: 420681600,
+			Hits: 1,
+			Name: "busybox:latest",
 		},
 		// note that we expect the alpine container is
 		// removed because the cache limit is 5 items.

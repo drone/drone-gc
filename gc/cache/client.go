@@ -41,3 +41,9 @@ func (c *client) DiskUsage(ctx context.Context) (types.DiskUsage, error) {
 	sort.Sort(byCreated(df.Images))
 	return df, err
 }
+
+type byCreated []*types.ImageSummary
+
+func (a byCreated) Len() int           { return len(a) }
+func (a byCreated) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a byCreated) Less(i, j int) bool { return a[i].Created < a[j].Created }
