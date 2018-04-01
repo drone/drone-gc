@@ -10,7 +10,7 @@ import (
 
 	"docker.io/go-docker/api/types"
 	"docker.io/go-docker/api/types/filters"
-	units "github.com/docker/go-units"
+	"github.com/docker/go-units"
 	"github.com/hashicorp/go-multierror"
 	"github.com/rs/zerolog/log"
 )
@@ -139,7 +139,7 @@ var imagePruneArgs = filters.NewArgs(
 
 var imageRemoveOpts = types.ImageRemoveOptions{
 	PruneChildren: true,
-	Force:         false,
+	Force:         true,
 }
 
 func isImageUsed(image *types.ImageSummary, containers []*types.Container) bool {
