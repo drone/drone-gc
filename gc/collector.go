@@ -11,6 +11,9 @@ import (
 	"docker.io/go-docker"
 )
 
+// default timeout for the collection cycle.
+var timeout = time.Hour
+
 // Collector defines a Docker container garbage collector.
 type Collector interface {
 	Collect(context.Context) error
@@ -35,6 +38,8 @@ func New(client docker.APIClient, opt ...Option) Collector {
 }
 
 func (c *collector) Collect(ctx context.Context) error {
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
 	c.collectContainers(ctx)
 	c.collectDanglingImages(ctx)
 	c.collectImages(ctx)
