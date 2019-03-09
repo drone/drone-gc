@@ -1,12 +1,11 @@
-// Copyright 2018 Drone.IO Inc
-// Use of this software is governed by the Business Source License
+// Copyright 2019 Drone.IO Inc. All rights reserved.
+// Use of this source code is governed by a BSD-style license
 // that can be found in the LICENSE file.
 
 package gc
 
 import (
 	"context"
-	"time"
 
 	"docker.io/go-docker/api/types"
 	"github.com/hashicorp/go-multierror"
@@ -25,13 +24,8 @@ func (c *collector) collectContainers(ctx context.Context) error {
 		return err
 	}
 
-	now := time.Now()
 	for _, cc := range containers {
 		if skipImage(cc.Image) {
-			continue
-		}
-
-		if skipState(cc.State) {
 			continue
 		}
 
@@ -39,9 +33,25 @@ func (c *collector) collectContainers(ctx context.Context) error {
 			continue
 		}
 
-		t := time.Unix(cc.Created, 0)
-		if t.Add(time.Hour).After(now) {
+		if isProtected(cc.Labels) {
+			logger.Debug().
+				Strs("name", cc.Names).
+				Msg("container is protected")
 			continue
+		}
+
+		if isExpired(cc.Labels) == false {
+			logger.Debug().
+				Strs("name", cc.Names).
+				Msg("container not expired")
+			continue
+		}
+
+		if cc.State != "exited" {
+			logger.Debug().
+				Strs("name", cc.Names).
+				Msg("kill long-running container")
+			c.client.ContainerKill(ctx, cc.ID, "9")
 		}
 
 		logger.Info().

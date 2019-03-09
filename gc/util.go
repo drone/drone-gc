@@ -1,12 +1,14 @@
-// Copyright 2018 Drone.IO Inc
-// Use of this software is governed by the Business Source License
+// Copyright 2019 Drone.IO Inc. All rights reserved.
+// Use of this source code is governed by a BSD-style license
 // that can be found in the LICENSE file.
 
 package gc
 
 import (
 	"path"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/drone/drone-gc/gc/internal"
 )
@@ -40,4 +42,21 @@ func matchPatterns(names []string, patterns []string) bool {
 		}
 	}
 	return false
+}
+
+func isExpired(labels map[string]string) bool {
+	l, ok := labels["io.drone.expires"]
+	if !ok {
+		return false
+	}
+	i, err := strconv.ParseInt(l, 10, 64)
+	if err != nil {
+		return true
+	}
+	t := time.Unix(i, 0)
+	return time.Now().After(t)
+}
+
+func isProtected(labels map[string]string) bool {
+	return labels["io.drone.protected"] == "true"
 }

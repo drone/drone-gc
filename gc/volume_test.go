@@ -1,5 +1,5 @@
-// Copyright 2018 Drone.IO Inc
-// Use of this software is governed by the Business Source License
+// Copyright 2019 Drone.IO Inc. All rights reserved.
+// Use of this source code is governed by a BSD-style license
 // that can be found in the LICENSE file.
 
 package gc
@@ -7,6 +7,7 @@ package gc
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -23,8 +24,9 @@ func TestCollectVolumes(t *testing.T) {
 
 	mockVolumes := volume.VolumesListOKBody{
 		Volumes: []*types.Volume{
-			{Name: "a180b24e38ed", Driver: "local", CreatedAt: "2018-01-01T00:00:00Z"},
-			{Name: "bfbf8512f21e", Driver: "local", CreatedAt: time.Now().UTC().Format("2006-01-02T15:04:05Z")},
+			{Name: "a180b24e38ed", Driver: "local", Labels: map[string]string{"io.drone.expires": "915148800"}},
+			{Name: "e3d0f1751532", Driver: "local", Labels: map[string]string{"io.drone.expires": fmt.Sprint(time.Now().Add(time.Hour).Unix())}},
+			{Name: "bfbf8512f21e", Driver: "local", Labels: nil},
 		},
 	}
 
@@ -45,11 +47,11 @@ func TestCollectVolumes_MultiError(t *testing.T) {
 
 	mockVolumes := volume.VolumesListOKBody{
 		Volumes: []*types.Volume{
-			{Name: "a180b24e38ed", Driver: "local", CreatedAt: "2018-01-01T00:00:00Z"},
-			{Name: "bfbf8512f21e", Driver: "local", CreatedAt: "2018-01-01T00:00:00Z"},
+			{Name: "a180b24e38ed", Driver: "local", Labels: map[string]string{"io.drone.expires": "915148800"}},
+			{Name: "bfbf8512f21e", Driver: "local", Labels: map[string]string{"io.drone.expires": "915148800"}},
 		},
 	}
-	mockErr := errors.New("cannot remove container")
+	mockErr := errors.New("cannot remove volume")
 
 	client := mocks.NewMockAPIClient(controller)
 	client.EXPECT().VolumeList(gomock.Any(), volumeListArgs).Return(mockVolumes, nil)

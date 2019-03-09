@@ -1,24 +1,74 @@
-workspace:
-  base: /go
-  path: src/github.com/drone/drone-gc
+kind: pipeline
+name: default
 
-pipeline:
-  test:
-    image: golang
-    environment:
-    commands:
-      - go get -u github.com/golang/dep/cmd/dep
-      - dep ensure
-      - go test -v -cover ./...
+steps:
+- name: test
+  image: golang:1.12
+  volumes:
+  - name: gocache
+    path: /go
+  commands:
+  - go test -v -cover ./...
 
-  build:
-    image: golang
-    commands: sh .drone.sh
+- name: build
+  image: golang:1.12
+  volumes:
+  - name: gocache
+    path: /go
+  commands:
+  - sh .drone.sh
+  when:
+    event: [ push, tag ]
 
-  publish:
-    image: plugins/docker
+- name: publish-linux-amd64
+  image: plugins/docker
+  settings:
     repo: drone/gc
     auto_tag: true
-    secrets: [ docker_username, docker_password ]
-    when:
-      event: [ push, tag ]
+    auto_tag_suffix: linux-amd64
+    username: drone
+    password:
+      from_secret: docker_password
+  when:
+    event: [ push, tag ]
+
+- name: publish-linux-arm
+  image: plugins/docker
+  settings:
+    repo: drone/gc
+    auto_tag: true
+    auto_tag_suffix: linux-arm
+    dockerfile: Dockerfile.linux.arm
+    username: drone
+    password:
+      from_secret: docker_password
+  when:
+    event: [ push, tag ]
+
+- name: publish-linux-arm64
+  image: plugins/docker
+  settings:
+    repo: drone/gc
+    auto_tag: true
+    auto_tag_suffix: linux-arm64
+    dockerfile: Dockerfile.linux.arm64
+    username: drone
+    password:
+      from_secret: docker_password
+  when:
+    event: [ push, tag ]
+
+- name: docker-manifest
+  image: plugins/manifest
+  settings:
+    spec: Docker.manifest
+    ignore_missing: true
+    username: drone
+    password:
+      from_secret: docker_password
+  when:
+    event: [ push, tag ]
+
+volumes:
+- name: gocache
+  temp: {}

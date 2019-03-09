@@ -1,12 +1,11 @@
-// Copyright 2018 Drone.IO Inc
-// Use of this software is governed by the Business Source License
+// Copyright 2019 Drone.IO Inc. All rights reserved.
+// Use of this source code is governed by a BSD-style license
 // that can be found in the LICENSE file.
 
 package gc
 
 import (
 	"context"
-	"time"
 
 	"docker.io/go-docker/api/types/filters"
 	"github.com/hashicorp/go-multierror"
@@ -25,19 +24,17 @@ func (c *collector) collectVolumes(ctx context.Context) error {
 		return err
 	}
 
-	now := time.Now()
 	for _, v := range volumes.Volumes {
-		t, err := time.Parse("2006-01-02T15:04:05Z", v.CreatedAt)
-		if err != nil {
-			logger.Error().
-				Err(err).
+		if isProtected(v.Labels) {
+			logger.Debug().
 				Str("name", v.Name).
-				Msg("invalid date time format")
-			result = multierror.Append(result, err)
+				Msg("volume is protected")
 			continue
 		}
-
-		if t.Add(time.Hour).After(now) {
+		if isExpired(v.Labels) == false {
+			logger.Debug().
+				Str("name", v.Name).
+				Msg("volume not expired")
 			continue
 		}
 
@@ -62,10 +59,6 @@ func (c *collector) collectVolumes(ctx context.Context) error {
 }
 
 var volumeListArgs = filters.NewArgs(
-	filters.KeyValuePair{
-		Key:   "dangling",
-		Value: "true",
-	},
 	filters.KeyValuePair{
 		Key:   "driver",
 		Value: "local",

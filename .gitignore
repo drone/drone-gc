@@ -1,3 +1,4 @@
+drone-gc
 /vendor
 /release
 *.out

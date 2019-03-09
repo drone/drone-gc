@@ -1,5 +1,5 @@
-// Copyright 2018 Drone.IO Inc
-// Use of this software is governed by the Business Source License
+// Copyright 2019 Drone.IO Inc. All rights reserved.
+// Use of this source code is governed by a BSD-style license
 // that can be found in the LICENSE file.
 
 package gc
@@ -10,6 +10,11 @@ import (
 
 	"docker.io/go-docker"
 )
+
+// FilterFunc filters the Docker resource based
+// on its labels. If the function returns false,
+// the resource is ignored.
+type FilterFunc func(map[string]string) bool
 
 // default timeout for the collection cycle.
 var timeout = time.Hour
@@ -25,6 +30,7 @@ type collector struct {
 	whitelist []string // reserved containers
 	reserved  []string // reserved images
 	threshold int64    // target threshold in bytes
+	filter    FilterFunc
 }
 
 // New returns a garbage collector.

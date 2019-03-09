@@ -1,5 +1,5 @@
-// Copyright 2018 Drone.IO Inc
-// Use of this software is governed by the Business Source License
+// Copyright 2019 Drone.IO Inc. All rights reserved.
+// Use of this source code is governed by a BSD-style license
 // that can be found in the LICENSE file.
 
 package gc
@@ -7,6 +7,7 @@ package gc
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -25,6 +26,15 @@ func TestCollectContainers(t *testing.T) {
 			ID:      "c3d2a6307f4e",
 			Names:   []string{"bar"},
 			State:   "exited",
+			Labels:  map[string]string{"io.drone.expires": "915148800"},
+			Created: 359596800,
+		},
+		// skip missing io.drone.expires label
+		{
+			ID:      "2b8fd9751c4c",
+			Names:   []string{"foo", "bar"},
+			State:   "exited",
+			Labels:  map[string]string{},
 			Created: 359596800,
 		},
 		// skip whitelisted name
@@ -32,6 +42,7 @@ func TestCollectContainers(t *testing.T) {
 			ID:      "2b8fd9751c4c",
 			Names:   []string{"foo", "bar"},
 			State:   "exited",
+			Labels:  map[string]string{"io.drone.expires": "915148800"},
 			Created: 359596800,
 		},
 		// skip drone images
@@ -40,13 +51,7 @@ func TestCollectContainers(t *testing.T) {
 			Names:   []string{"bar"},
 			Image:   "drone/drone:latest",
 			State:   "exited",
-			Created: 359596800,
-		},
-		// skip non-exited containers
-		{
-			ID:      "a180b24e38ed",
-			Names:   []string{"bar"},
-			State:   "created",
+			Labels:  map[string]string{"io.drone.expires": "915148800"},
 			Created: 359596800,
 		},
 		// skip recently created containers
@@ -54,6 +59,7 @@ func TestCollectContainers(t *testing.T) {
 			ID:      "481995377a04",
 			Names:   []string{"bar"},
 			State:   "exited",
+			Labels:  map[string]string{"io.drone.expires": fmt.Sprint(time.Now().Add(time.Hour).Unix())},
 			Created: time.Now().Unix(),
 		},
 	}
@@ -80,12 +86,14 @@ func TestCollectContainers_MultiError(t *testing.T) {
 			ID:      "c3d2a6307f4e",
 			Names:   []string{"bar"},
 			State:   "exited",
+			Labels:  map[string]string{"io.drone.expires": "915148800"},
 			Created: 359596800,
 		},
 		{
 			ID:      "2b8fd9751c4c",
 			Names:   []string{"foo"},
 			State:   "exited",
+			Labels:  map[string]string{"io.drone.expires": "915148800"},
 			Created: 359596800,
 		},
 	}
