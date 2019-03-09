@@ -44,6 +44,11 @@ func TestSkipImage(t *testing.T) {
 		{"drone/gc", true},
 		{"docker.io/drone/gc", true},
 		{"docker.io/drone/gc:latest", true},
+		{"docker.io/drone/gc:linux-amd64", true},
+		// watchtower
+		{"v2tec/watchtower", true},
+		{"docker.io/v2tec/watchtower", true},
+		{"docker.io/v2tec/watchtower:latest", true},
 		// misc
 		{"golang", false},
 		{"alpine", false},

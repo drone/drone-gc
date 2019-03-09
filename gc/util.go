@@ -24,7 +24,14 @@ func skipState(state string) bool {
 
 func skipImage(image string) bool {
 	image = internal.ExpandImage(image)
-	return strings.HasPrefix(image, "docker.io/drone/")
+	switch {
+	case strings.HasPrefix(image, "docker.io/drone/"):
+		return true
+	case strings.HasPrefix(image, "docker.io/v2tec/watchtower:"):
+		return true
+	default:
+		return false
+	}
 }
 
 func matchPatterns(names []string, patterns []string) bool {
