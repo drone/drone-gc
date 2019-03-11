@@ -1,5 +1,5 @@
 // Copyright 2019 Drone.IO Inc. All rights reserved.
-// Use of this source code is governed by a BSD-style license
+// Use of this source code is governed by the Blue Oak Model License
 // that can be found in the LICENSE file.
 
 package internal
