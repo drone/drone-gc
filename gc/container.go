@@ -51,7 +51,14 @@ func (c *collector) collectContainers(ctx context.Context) error {
 			logger.Debug().
 				Strs("name", cc.Names).
 				Msg("kill long-running container")
-			c.client.ContainerKill(ctx, cc.ID, "9")
+
+			err = c.client.ContainerKill(ctx, cc.ID, "SIGKILL")
+			if err != nil {
+				logger.Error().
+					Err(err).
+					Strs("name", cc.Names).
+					Msg("cannot kill container")
+			}
 		}
 
 		logger.Info().
