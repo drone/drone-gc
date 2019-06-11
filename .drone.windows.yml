@@ -3,31 +3,32 @@ kind: pipeline
 name: testing
 
 platform:
-  os: linux
+  os: windows
   arch: amd64
+  version: 1803
 
 steps:
 - name: vet
   pull: always
-  image: golang:1.12
+  image: golang:1.12-windowsservercore-1803
   commands:
   - go vet ./...
   environment:
     GO111MODULE: on
   volumes:
   - name: gopath
-    path: /go
+    path: C:\\gopath
 
 - name: test
   pull: always
-  image: golang:1.12
+  image: golang:1.12-windowsservercore-1803
   commands:
   - go test -cover ./...
   environment:
     GO111MODULE: on
   volumes:
   - name: gopath
-    path: /go
+    path: C:\\gopath
 
 volumes:
 - name: gopath
@@ -41,18 +42,19 @@ trigger:
 
 ---
 kind: pipeline
-name: linux-amd64
+name: windows-1803
 
 platform:
-  os: linux
+  os: windows
   arch: amd64
+  version: 1803
 
 steps:
 - name: build-push
   pull: always
-  image: golang:1.12
+  image: golang:1.12-windowsservercore-1803
   commands:
-  - "go build -v -ldflags \"-X main.version=${DRONE_COMMIT_SHA:0:8}\" -a -tags netgo -o release/linux/amd64/drone-gc"
+  - "go build -v -ldflags \"-X main.version=${DRONE_COMMIT_SHA:0:8}\" -a -tags netgo -o release/windows/amd64/drone-gc.exe"
   environment:
     CGO_ENABLED: 0
     GO111MODULE: on
@@ -63,9 +65,9 @@ steps:
 
 - name: build-tag
   pull: always
-  image: golang:1.12
+  image: golang:1.12-windowsservercore-1803
   commands:
-  - "go build -v -ldflags \"-X main.version=${DRONE_TAG##v}\" -a -tags netgo -o release/linux/amd64/drone-gc"
+  - "go build -v -ldflags \"-X main.version=${DRONE_TAG##v}\" -a -tags netgo -o release/windows/amd64/drone-gc.exe"
   environment:
     CGO_ENABLED: 0
     GO111MODULE: on
@@ -77,16 +79,19 @@ steps:
   pull: always
   image: plugins/docker
   settings:
-    daemon_off: false
-    dockerfile: docker/Dockerfile.linux.amd64
+    daemon_off: true
+    dockerfile: docker/Dockerfile.windows.1803
     dry_run: true
     password:
       from_secret: docker_password
-    purge: true
+    purge: false
     repo: drone/gc
-    tags: linux-amd64
+    tags: windows-1803-amd64
     username:
       from_secret: docker_username
+  volumes:
+  - name: docker_pipe
+    path: \\\\.\\pipe\\docker_engine
   when:
     event:
     - pull_request
@@ -96,19 +101,27 @@ steps:
   image: plugins/docker
   settings:
     auto_tag: true
-    auto_tag_suffix: linux-amd64
-    daemon_off: false
-    dockerfile: docker/Dockerfile.linux.amd64
+    auto_tag_suffix: windows-1803-amd64
+    daemon_off: true
+    dockerfile: docker/Dockerfile.windows.1803
     password:
       from_secret: docker_password
-    purge: true
+    purge: false
     repo: drone/gc
     username:
       from_secret: docker_username
+  volumes:
+  - name: docker_pipe
+    path: \\\\.\\pipe\\docker_engine
   when:
     event:
       exclude:
       - pull_request
+
+volumes:
+- name: docker_pipe
+  host:
+    path: \\\\.\\pipe\\docker_engine
 
 trigger:
   ref:
@@ -121,18 +134,19 @@ depends_on:
 
 ---
 kind: pipeline
-name: linux-arm64
+name: windows-1809
 
 platform:
-  os: linux
-  arch: arm64
+  os: windows
+  arch: amd64
+  version: 1809
 
 steps:
 - name: build-push
   pull: always
-  image: golang:1.12
+  image: golang:1.12-windowsservercore-1809
   commands:
-  - "go build -v -ldflags \"-X main.version=${DRONE_COMMIT_SHA:0:8}\" -a -tags netgo -o release/linux/arm64/drone-gc"
+  - "go build -v -ldflags \"-X main.version=${DRONE_COMMIT_SHA:0:8}\" -a -tags netgo -o release/windows/amd64/drone-gc.exe"
   environment:
     CGO_ENABLED: 0
     GO111MODULE: on
@@ -143,9 +157,9 @@ steps:
 
 - name: build-tag
   pull: always
-  image: golang:1.12
+  image: golang:1.12-windowsservercore-1809
   commands:
-  - "go build -v -ldflags \"-X main.version=${DRONE_TAG##v}\" -a -tags netgo -o release/linux/arm64/drone-gc"
+  - "go build -v -ldflags \"-X main.version=${DRONE_TAG##v}\" -a -tags netgo -o release/windows/amd64/drone-gc.exe"
   environment:
     CGO_ENABLED: 0
     GO111MODULE: on
@@ -157,16 +171,19 @@ steps:
   pull: always
   image: plugins/docker
   settings:
-    daemon_off: false
-    dockerfile: docker/Dockerfile.linux.arm64
+    daemon_off: true
+    dockerfile: docker/Dockerfile.windows.1809
     dry_run: true
     password:
       from_secret: docker_password
-    purge: true
+    purge: false
     repo: drone/gc
-    tags: linux-arm64
+    tags: windows-1809-amd64
     username:
       from_secret: docker_username
+  volumes:
+  - name: docker_pipe
+    path: \\\\.\\pipe\\docker_engine
   when:
     event:
     - pull_request
@@ -176,99 +193,27 @@ steps:
   image: plugins/docker
   settings:
     auto_tag: true
-    auto_tag_suffix: linux-arm64
-    daemon_off: false
-    dockerfile: docker/Dockerfile.linux.arm64
+    auto_tag_suffix: windows-1809-amd64
+    daemon_off: true
+    dockerfile: docker/Dockerfile.windows.1809
     password:
       from_secret: docker_password
-    purge: true
+    purge: false
     repo: drone/gc
     username:
       from_secret: docker_username
+  volumes:
+  - name: docker_pipe
+    path: \\\\.\\pipe\\docker_engine
   when:
     event:
       exclude:
       - pull_request
 
-trigger:
-  ref:
-  - refs/heads/master
-  - "refs/tags/**"
-  - "refs/pull/**"
-
-depends_on:
-- testing
-
----
-kind: pipeline
-name: linux-arm
-
-platform:
-  os: linux
-  arch: arm
-
-steps:
-- name: build-push
-  pull: always
-  image: golang:1.12
-  commands:
-  - "go build -v -ldflags \"-X main.version=${DRONE_COMMIT_SHA:0:8}\" -a -tags netgo -o release/linux/arm/drone-gc"
-  environment:
-    CGO_ENABLED: 0
-    GO111MODULE: on
-  when:
-    event:
-      exclude:
-      - tag
-
-- name: build-tag
-  pull: always
-  image: golang:1.12
-  commands:
-  - "go build -v -ldflags \"-X main.version=${DRONE_TAG##v}\" -a -tags netgo -o release/linux/arm/drone-gc"
-  environment:
-    CGO_ENABLED: 0
-    GO111MODULE: on
-  when:
-    event:
-    - tag
-
-- name: dryrun
-  pull: always
-  image: plugins/docker
-  settings:
-    daemon_off: false
-    dockerfile: docker/Dockerfile.linux.arm
-    dry_run: true
-    password:
-      from_secret: docker_password
-    purge: true
-    repo: drone/gc
-    tags: linux-arm
-    username:
-      from_secret: docker_username
-  when:
-    event:
-    - pull_request
-
-- name: publish
-  pull: always
-  image: plugins/docker
-  settings:
-    auto_tag: true
-    auto_tag_suffix: linux-arm
-    daemon_off: false
-    dockerfile: docker/Dockerfile.linux.arm
-    password:
-      from_secret: docker_password
-    purge: true
-    repo: drone/gc
-    username:
-      from_secret: docker_username
-  when:
-    event:
-      exclude:
-      - pull_request
+volumes:
+- name: docker_pipe
+  host:
+    path: \\\\.\\pipe\\docker_engine
 
 trigger:
   ref:
@@ -284,8 +229,9 @@ kind: pipeline
 name: notifications
 
 platform:
-  os: linux
+  os: windows
   arch: amd64
+  version: 1809
 
 steps:
 - name: manifest
@@ -312,8 +258,7 @@ trigger:
   - "refs/tags/**"
 
 depends_on:
-- linux-amd64
-- linux-arm64
-- linux-arm
+- windows-1803
+- windows-1809
 
 ...

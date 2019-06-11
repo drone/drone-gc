@@ -1,0 +1,199 @@
+local windows_pipe = '\\\\\\\\.\\\\pipe\\\\docker_engine';
+local windows_pipe_volume = 'docker_pipe';
+local test_pipeline_name = 'testing';
+
+local windows(os) = os == 'windows';
+
+local golang_image(os, version) =
+  'golang:' + '1.12' + if windows(os) then '-windowsservercore-' + version else '';
+
+{
+  test(os='linux', arch='amd64', version='')::
+    local is_windows = windows(os);
+    local golang = golang_image(os, version);
+    local volumes = if is_windows then [{name: 'gopath', path: 'C:\\\\gopath'}] else [{name: 'gopath', path: '/go',}];
+    {
+      kind: 'pipeline',
+      name: test_pipeline_name,
+      platform: {
+        os: os,
+        arch: arch,
+        version: if std.length(version) > 0 then version,
+      },
+      steps: [
+        {
+          name: 'vet',
+          image: golang,
+          pull: 'always',
+          environment: {
+            GO111MODULE: 'on',
+          },
+          commands: [
+            'go vet ./...',
+          ],
+          volumes: volumes,
+        },
+        {
+          name: 'test',
+          image: golang,
+          pull: 'always',
+          environment: {
+            GO111MODULE: 'on',
+          },
+          commands: [
+            'go test -cover ./...',
+          ],
+          volumes: volumes,
+        },
+      ],
+      trigger: {
+        ref: [
+          'refs/heads/master',
+          'refs/tags/**',
+          'refs/pull/**',
+        ],
+      },
+      volumes: [{name: 'gopath', temp: {}}]
+    },
+
+  build(name, os='linux', arch='amd64', version='')::
+    local is_windows = windows(os);
+    local tag = if is_windows then os + '-' + version else os + '-' + arch;
+    local docker_tag = if is_windows then tag + '-' + arch else tag;
+    local file_suffix = std.strReplace(tag, '-', '.');
+    local volumes = if is_windows then [{ name: windows_pipe_volume, path: windows_pipe }] else [];
+    local golang = golang_image(os, version);
+    local docker_repo = 'drone/' + std.splitLimit(name, '-', 1)[1];
+    local extension = if is_windows then '.exe' else '';
+    {
+      kind: 'pipeline',
+      name: tag,
+      platform: {
+        os: os,
+        arch: arch,
+        version: if std.length(version) > 0 then version,
+      },
+      steps: [
+        {
+          name: 'build-push',
+          image: golang,
+          pull: 'always',
+          environment: {
+            CGO_ENABLED: '0',
+            GO111MODULE: 'on',
+          },
+          commands: [
+            'go build -v -ldflags "-X main.version=${DRONE_COMMIT_SHA:0:8}" -a -tags netgo -o release/' + os + '/' + arch + '/' + name + extension,
+          ],
+          when: {
+            event: {
+              exclude: ['tag'],
+            },
+          },
+        },
+        {
+          name: 'build-tag',
+          image: golang,
+          pull: 'always',
+          environment: {
+            CGO_ENABLED: '0',
+            GO111MODULE: 'on',
+          },
+          commands: [
+            'go build -v -ldflags "-X main.version=${DRONE_TAG##v}" -a -tags netgo -o release/' + os + '/' + arch + '/' + name + extension,
+          ],
+          when: {
+            event: ['tag'],
+          },
+        },
+        {
+          name: 'dryrun',
+          image: 'plugins/docker',
+          pull: 'always',
+          settings: {
+            dry_run: true,
+            tags: docker_tag,
+            dockerfile: 'docker/Dockerfile.' + file_suffix,
+            daemon_off: if is_windows then 'true' else 'false',
+            purge: if is_windows then 'false' else 'true',
+            repo: docker_repo,
+            username: { from_secret: 'docker_username' },
+            password: { from_secret: 'docker_password' },
+          },
+          volumes: if std.length(volumes) > 0 then volumes,
+          when: {
+            event: ['pull_request'],
+          },
+        },
+        {
+          name: 'publish',
+          image: 'plugins/docker',
+          pull: 'always',
+          settings: {
+            auto_tag: true,
+            auto_tag_suffix: docker_tag,
+            daemon_off: if is_windows then 'true' else 'false',
+            purge: if is_windows then 'false' else 'true',
+            dockerfile: 'docker/Dockerfile.' + file_suffix,
+            repo: docker_repo,
+            username: { from_secret: 'docker_username' },
+            password: { from_secret: 'docker_password' },
+          },
+          volumes: if std.length(volumes) > 0 then volumes,
+          when: {
+            event: {
+              exclude: ['pull_request'],
+            },
+          },
+        },
+      ],
+      trigger: {
+        ref: [
+          'refs/heads/master',
+          'refs/tags/**',
+          'refs/pull/**',
+        ],
+      },
+      depends_on: [test_pipeline_name],
+      volumes: if is_windows then [{ name: windows_pipe_volume, host: { path: windows_pipe } }],
+    },
+
+  notifications(os='linux', arch='amd64', version='', depends_on=[])::
+    {
+      kind: 'pipeline',
+      name: 'notifications',
+      platform: {
+        os: os,
+        arch: arch,
+        version: if std.length(version) > 0 then version,
+      },
+      steps: [
+        {
+          name: 'manifest',
+          image: 'plugins/manifest',
+          pull: 'always',
+          settings: {
+            username: { from_secret: 'docker_username' },
+            password: { from_secret: 'docker_password' },
+            spec: 'docker/manifest.tmpl',
+            ignore_missing: true,
+          },
+        },
+        {
+          name: 'microbadger',
+          image: 'plugins/webhook',
+          pull: 'always',
+          settings: {
+            url: { from_secret: 'microbadger_url' },
+          },
+        },
+      ],
+      trigger: {
+        ref: [
+          'refs/heads/master',
+          'refs/tags/**',
+        ],
+      },
+      depends_on: depends_on,
+    },
+}
