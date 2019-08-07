@@ -1,0 +1,7 @@
+FROM mcr.microsoft.com/windows/nanoserver:1803
+USER ContainerAdministrator
+
+ ENV GODEBUG=netdns=go
+
+ ADD release/windows/amd64/drone-gc.exe C:/drone-gc.exe
+ENTRYPOINT [ "C:\\drone-gc.exe" ]

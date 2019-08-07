@@ -1,74 +1,157 @@
+---
 kind: pipeline
-name: default
+type: docker
+name: build-linux
 
 steps:
-- name: test
-  image: golang:1.12
-  volumes:
-  - name: gocache
-    path: /go
-  commands:
-  - go test -v -cover ./...
-
 - name: build
-  image: golang:1.12
-  volumes:
-  - name: gocache
-    path: /go
+  image: golang:1.10
   commands:
-  - sh .drone.sh
-  when:
-    event: [ push, tag ]
+  - go test ./...
+  - sh scripts/build.sh
 
-- name: publish-linux-amd64
-  image: plugins/docker
+- name: publish_amd64
+  image: plugins/docker:18
   settings:
-    repo: drone/gc
-    auto_tag: true
+    auto_tag: "true"
     auto_tag_suffix: linux-amd64
-    username: drone
+    dockerfile: docker/Dockerfile.linux.amd64
+    username:
+      from_secret: docker_username
     password:
       from_secret: docker_password
-  when:
-    event: [ push, tag ]
-
-- name: publish-linux-arm
-  image: plugins/docker
-  settings:
     repo: drone/gc
-    auto_tag: true
-    auto_tag_suffix: linux-arm
-    dockerfile: Dockerfile.linux.arm
-    username: drone
-    password:
-      from_secret: docker_password
   when:
-    event: [ push, tag ]
+    event:
+    - push
+    - tag
 
-- name: publish-linux-arm64
-  image: plugins/docker
+- image: plugins/docker:18
+  name: publish_arm64
   settings:
-    repo: drone/gc
-    auto_tag: true
+    auto_tag: "true"
     auto_tag_suffix: linux-arm64
-    dockerfile: Dockerfile.linux.arm64
-    username: drone
+    dockerfile: docker/Dockerfile.linux.arm64
     password:
       from_secret: docker_password
+    repo: drone/gc
+    username:
+      from_secret: docker_username
   when:
-    event: [ push, tag ]
+    event:
+    - push
+    - tag
 
-- name: docker-manifest
+- name: publish_arm
+  image: plugins/docker:18
+  settings:
+    auto_tag: "true"
+    auto_tag_suffix: linux-arm
+    dockerfile: docker/Dockerfile.linux.arm
+    username:
+      from_secret: docker_username
+    password:
+      from_secret: docker_password
+    repo: drone/gc
+  when:
+    event:
+    - push
+    - tag
+
+---
+kind: pipeline
+type: ssh
+name: windows-1809-amd64
+
+platform:
+  os: windows
+
+server:
+  host:
+    from_secret: windows_server_1809
+  password:
+    from_secret: windows_password
+  user:
+    from_secret: windows_username
+
+steps:
+- name: build
+  commands:
+  - powershell.exe scripts/build.ps1
+  - docker login -u $env:USERNAME -p $env:PASSWORD
+  - docker build -f docker/Dockerfile.windows.1809.amd64 -t drone/gc:windows-1809-amd64 .
+  - docker push drone/gc:windows-1809-amd64
+  environment:
+    PASSWORD:
+      from_secret: docker_password
+    USERNAME:
+      from_secret: docker_username
+
+trigger:
+  event:
+  - push
+
+depends_on:
+- build-linux
+
+---
+kind: pipeline
+type: ssh
+name: windows-1903-amd64
+
+platform:
+  os: windows
+
+server:
+  host:
+    from_secret: windows_server_1903
+  password:
+    from_secret: windows_password
+  user:
+    from_secret: windows_username
+  
+steps:
+- name: build
+  commands:
+  - powershell.exe scripts/build.ps1
+  - docker login -u $env:USERNAME -p $env:PASSWORD
+  - docker build -f docker/Dockerfile.windows.1903.amd64 -t drone/gc:windows-1903-amd64 .
+  - docker push drone/gc:windows-1903-amd64
+  environment:
+    PASSWORD:
+      from_secret: docker_password
+    USERNAME:
+      from_secret: docker_username
+
+trigger:
+  event:
+  - push
+
+depends_on:
+- build-linux
+
+---
+kind: pipeline
+name: manifest
+type: docker
+
+depends_on:
+- windows-1809-amd64
+- windows-1903-amd64
+
+steps:
+- name: manifest
   image: plugins/manifest
   settings:
-    spec: Docker.manifest
-    ignore_missing: true
-    username: drone
+    spec: docker/manifest.tmpl
+    auto_tag: "true"
+    ignore_missing: "true"
     password:
       from_secret: docker_password
-  when:
-    event: [ push, tag ]
+    username:
+      from_secret: docker_username
 
-volumes:
-- name: gocache
-  temp: {}
+trigger:
+  event:
+  - push
+  - tag
