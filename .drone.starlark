@@ -32,7 +32,7 @@ def build_linux():
         'steps': [
             {
                 'name': 'build',
-                'image': 'golang:1.10',
+                'image': 'golang:1.12',
                 'commands': [
                     'go test ./...',
                     'sh scripts/build.sh',
