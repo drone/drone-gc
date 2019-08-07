@@ -3,4 +3,4 @@ $Env:CGO_ENABLED="0"
 
 # compile for windows
 # note this only compiles for amd64
-go build -o release/windows/amd64/drone-gc github.com/drone/drone-gc
+go build -o release/windows/amd64/drone-gc.exe github.com/drone/drone-gc
