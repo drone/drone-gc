@@ -129,6 +129,47 @@ func TestCollectImages_BelowThreshold(t *testing.T) {
 	}
 }
 
+// this test verifies that we do not purge images that are not old enough
+func TestCollectImages_SkipNotOldEnough(t *testing.T) {
+	controller := gomock.NewController(t)
+	defer controller.Finish()
+
+	mockdf := types.DiskUsage{
+		LayersSize: 1,
+		Images: []*types.ImageSummary{
+			// this image was created 20 mins ago
+			{
+				ID:      "a180b24e38ed",
+				Created: time.Now().Add(-20 * time.Minute).Unix(),
+			},
+			// this image was created 40 mins ago
+			{
+				ID:      "481995377a04",
+				Created: time.Now().Add(-40 * time.Minute).Unix(),
+			},
+		},
+	}
+
+	mockImages := []types.ImageInspect{
+		{ID: "a180b24e38ed"},
+		{ID: "481995377a04"},
+	}
+
+	client := mocks.NewMockAPIClient(controller)
+	client.EXPECT().DiskUsage(gomock.Any()).Return(mockdf, nil)
+
+	// We DO NOT expect image 0 to be removed since is not old enough
+	client.EXPECT().ImageInspectWithRaw(gomock.Any(), mockImages[1].ID).Return(mockImages[1], nil, nil)
+	client.EXPECT().ImageRemove(gomock.Any(), mockImages[1].ID, imageRemoveOpts).Return(nil, nil)
+
+	// Minimum image age set to 30 mins
+	c := New(client, WithMinImageAge(time.Hour/2)).(*collector)
+	err := c.collectImages(context.Background())
+	if err != nil {
+		t.Error(err)
+	}
+}
+
 // this test verifies that we do not purge images that are
 // in-use by the system or are newly created.
 func TestCollectImages_Skip(t *testing.T) {
@@ -156,7 +197,7 @@ func TestCollectImages_Skip(t *testing.T) {
 	client := mocks.NewMockAPIClient(controller)
 	client.EXPECT().DiskUsage(gomock.Any()).Return(mockdf, nil)
 
-	c := New(client).(*collector)
+	c := New(client, WithMinImageAge(time.Hour)).(*collector)
 	err := c.collectImages(context.Background())
 	if err != nil {
 		t.Error(err)
