@@ -11,7 +11,7 @@ import (
 	"github.com/drone/drone-gc/gc/internal"
 	"github.com/google/go-cmp/cmp"
 
-	"docker.io/go-docker/api/types"
+	"github.com/docker/docker/api/types"
 	"github.com/drone/drone-gc/mocks"
 	"github.com/golang/mock/gomock"
 )

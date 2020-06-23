@@ -12,7 +12,7 @@ import (
 
 	"github.com/drone/drone-gc/mocks"
 
-	"docker.io/go-docker/api/types"
+	"github.com/docker/docker/api/types"
 	"github.com/golang/mock/gomock"
 )
 

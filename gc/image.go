@@ -8,8 +8,8 @@ import (
 	"context"
 	"time"
 
-	"docker.io/go-docker/api/types"
-	"docker.io/go-docker/api/types/filters"
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/go-units"
 	"github.com/hashicorp/go-multierror"
 	"github.com/rs/zerolog/log"

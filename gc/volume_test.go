@@ -13,8 +13,8 @@ import (
 
 	"github.com/drone/drone-gc/mocks"
 
-	"docker.io/go-docker/api/types"
-	"docker.io/go-docker/api/types/volume"
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/volume"
 	"github.com/golang/mock/gomock"
 )
 
@@ -22,7 +22,7 @@ func TestCollectVolumes(t *testing.T) {
 	controller := gomock.NewController(t)
 	defer controller.Finish()
 
-	mockVolumes := volume.VolumesListOKBody{
+	mockVolumes := volume.VolumeListOKBody{
 		Volumes: []*types.Volume{
 			{Name: "a180b24e38ed", Driver: "local", Labels: map[string]string{"io.drone.expires": "915148800"}},
 			{Name: "e3d0f1751532", Driver: "local", Labels: map[string]string{"io.drone.expires": fmt.Sprint(time.Now().Add(time.Hour).Unix())}},
@@ -45,7 +45,7 @@ func TestCollectVolumes_MultiError(t *testing.T) {
 	controller := gomock.NewController(t)
 	defer controller.Finish()
 
-	mockVolumes := volume.VolumesListOKBody{
+	mockVolumes := volume.VolumeListOKBody{
 		Volumes: []*types.Volume{
 			{Name: "a180b24e38ed", Driver: "local", Labels: map[string]string{"io.drone.expires": "915148800"}},
 			{Name: "bfbf8512f21e", Driver: "local", Labels: map[string]string{"io.drone.expires": "915148800"}},

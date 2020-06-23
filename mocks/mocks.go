@@ -4,4 +4,4 @@
 
 package mocks
 
-//go:generate mockgen -package=mocks -destination=mock_docker.go   docker.io/go-docker APIClient
+//go:generate mockgen -package=mocks -destination=mock_docker.go   github.com/docker/docker/client APIClient

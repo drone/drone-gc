@@ -7,7 +7,7 @@ package gc
 import (
 	"context"
 
-	"docker.io/go-docker/api/types"
+	"github.com/docker/docker/api/types"
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/rs/zerolog/log"

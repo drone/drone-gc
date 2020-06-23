@@ -11,9 +11,9 @@ import (
 	"github.com/drone/drone-gc/gc/internal"
 	"github.com/rs/zerolog/log"
 
-	"docker.io/go-docker"
-	"docker.io/go-docker/api/types"
-	"docker.io/go-docker/api/types/filters"
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/filters"
+	docker "github.com/docker/docker/client"
 )
 
 type listener struct {
@@ -22,7 +22,7 @@ type listener struct {
 }
 
 func (l *listener) listen(ctx context.Context) error {
-	// this is an infinite loop that only exites when
+	// this is an infinite loop that only exits when
 	// the context is cancelled (e.g. graceful shutdown).
 	// we want to continuously re-connect to the docker
 	// event stream if disconnected.

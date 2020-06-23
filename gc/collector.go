@@ -8,7 +8,7 @@ import (
 	"context"
 	"time"
 
-	"docker.io/go-docker"
+	docker "github.com/docker/docker/client"
 )
 
 // FilterFunc filters the Docker resource based

@@ -10,8 +10,8 @@ import (
 
 	"github.com/drone/drone-gc/gc/internal"
 
-	"docker.io/go-docker"
-	"docker.io/go-docker/api/types"
+	docker "github.com/docker/docker/client"
+	"github.com/docker/docker/api/types"
 )
 
 type client struct {

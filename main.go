@@ -13,7 +13,7 @@ import (
 	"github.com/drone/drone-gc/gc/cache"
 	"github.com/drone/signal"
 
-	"docker.io/go-docker"
+	docker "github.com/docker/docker/client"
 	"github.com/docker/go-units"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/rs/zerolog"

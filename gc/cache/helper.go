@@ -7,7 +7,7 @@ package cache
 import (
 	"context"
 
-	"docker.io/go-docker"
+	docker "github.com/docker/docker/client"
 )
 
 // Wrap returns a wrapped copy of the Docker client that
