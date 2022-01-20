@@ -1,5 +1,3 @@
-![build status](https://beta.drone.io/api/badges/drone/drone-gc/status.svg)
-
 __drone-gc__ is a simple daemon that periodically removes unused docker resources. The garbage collector is optimized for continuous integration systems. It uses an lrfu algorithm to control the size of your image cache, while retaining the most frequently used images.
 
 Installation:
