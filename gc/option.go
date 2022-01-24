@@ -4,6 +4,8 @@
 
 package gc
 
+import "time"
+
 // Option configures a garbage collector option.
 type Option func(*collector)
 
@@ -31,6 +33,15 @@ func WithWhitelist(names []string) Option {
 func WithThreshold(threshold int64) Option {
 	return func(c *collector) {
 		c.threshold = threshold
+	}
+}
+
+// WithMinImageAge returns an option to set the minimum
+// age a image should be to become a candidate for removal.
+// Images younger than this value won't be removed
+func WithMinImageAge(minImageAge time.Duration) Option {
+	return func(c *collector) {
+		c.minImageAge = minImageAge
 	}
 }
 

@@ -72,7 +72,7 @@ func (c *collector) collectImages(ctx context.Context) error {
 		if isImageUsed(image, df.Containers) {
 			continue
 		}
-		if time.Unix(image.Created, 0).Add(time.Hour).After(now) {
+		if time.Unix(image.Created, 0).Add(c.minImageAge).After(now) {
 			continue
 		}
 

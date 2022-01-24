@@ -21,14 +21,15 @@ import (
 )
 
 type config struct {
-	Once       bool          `envconfig:"GC_ONCE"`
-	Debug      bool          `envconfig:"GC_DEBUG"`
-	Color      bool          `envconfig:"GC_DEBUG_COLOR"`
-	Pretty     bool          `envconfig:"GC_DEBUG_PRETTY"`
-	Images     []string      `envconfig:"GC_IGNORE_IMAGES"`
-	Containers []string      `envconfig:"GC_IGNORE_CONTAINERS"`
-	Interval   time.Duration `envconfig:"GC_INTERVAL" default:"5m"`
-	Cache      string        `envconfig:"GC_CACHE" default:"5gb"`
+	Once        bool          `envconfig:"GC_ONCE"`
+	Debug       bool          `envconfig:"GC_DEBUG"`
+	Color       bool          `envconfig:"GC_DEBUG_COLOR"`
+	Pretty      bool          `envconfig:"GC_DEBUG_PRETTY"`
+	Images      []string      `envconfig:"GC_IGNORE_IMAGES"`
+	Containers  []string      `envconfig:"GC_IGNORE_CONTAINERS"`
+	Interval    time.Duration `envconfig:"GC_INTERVAL" default:"5m"`
+	MinImageAge time.Duration `envconfig:"GC_MIN_IMAGE_AGE" default:"1h"`
+	Cache       string        `envconfig:"GC_CACHE" default:"5gb"`
 }
 
 func main() {
@@ -61,6 +62,7 @@ func main() {
 		gc.WithImageWhitelist(cfg.Images),
 		gc.WithThreshold(size),
 		gc.WithWhitelist(gc.ReservedNames),
+		gc.WithMinImageAge(cfg.MinImageAge),
 		gc.WithWhitelist(cfg.Containers),
 	)
 	if cfg.Once {
@@ -71,6 +73,7 @@ func main() {
 			Strs("ignore-images", cfg.Images).
 			Str("cache", cfg.Cache).
 			Str("interval", units.HumanDuration(cfg.Interval)).
+			Str("minimal image age", units.HumanDuration(cfg.MinImageAge)).
 			Msg("starting the garbage collector")
 
 		gc.Schedule(ctx, collector, cfg.Interval)

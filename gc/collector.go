@@ -27,10 +27,11 @@ type Collector interface {
 type collector struct {
 	client docker.APIClient
 
-	whitelist []string // reserved containers
-	reserved  []string // reserved images
-	threshold int64    // target threshold in bytes
-	filter    FilterFunc
+	whitelist   []string // reserved containers
+	reserved    []string // reserved images
+	threshold   int64    // target threshold in bytes
+	minImageAge time.Duration
+	filter      FilterFunc
 }
 
 // New returns a garbage collector.
