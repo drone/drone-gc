@@ -26,27 +26,27 @@ func TestCache(t *testing.T) {
 	}
 
 	want := []*item{
-		&item{
+		{
 			Last: 1192233603,
 			Hits: 1,
 			Name: "golang:1.9",
 		},
-		&item{
+		{
 			Last: 1192233602,
 			Hits: 1,
 			Name: "golang:1.8",
 		},
-		&item{
+		{
 			Last: 1192233601,
 			Hits: 3,
 			Name: "golang:1.7",
 		},
-		&item{
+		{
 			Last: 1192233600,
 			Hits: 1,
 			Name: "golang:1",
 		},
-		&item{
+		{
 			Last: 420681600,
 			Hits: 1,
 			Name: "busybox:latest",

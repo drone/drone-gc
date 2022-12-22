@@ -40,7 +40,7 @@ func (c *collector) collectContainers(ctx context.Context) error {
 			continue
 		}
 
-		if isExpired(cc.Labels) == false {
+		if !isExpired(cc.Labels) {
 			logger.Debug().
 				Strs("name", cc.Names).
 				Msg("container not expired")

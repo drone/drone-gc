@@ -30,7 +30,6 @@ type collector struct {
 	whitelist []string // reserved containers
 	reserved  []string // reserved images
 	threshold int64    // target threshold in bytes
-	filter    FilterFunc
 }
 
 // New returns a garbage collector.
@@ -46,11 +45,11 @@ func New(client docker.APIClient, opt ...Option) Collector {
 func (c *collector) Collect(ctx context.Context) error {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
-	c.collectContainers(ctx)
-	c.collectDanglingImages(ctx)
-	c.collectImages(ctx)
-	c.collectNetworks(ctx)
-	c.collectVolumes(ctx)
+	_ = c.collectContainers(ctx)
+	_ = c.collectDanglingImages(ctx)
+	_ = c.collectImages(ctx)
+	_ = c.collectNetworks(ctx)
+	_ = c.collectVolumes(ctx)
 	return nil
 }
 
@@ -62,7 +61,7 @@ func Schedule(ctx context.Context, collector Collector, interval time.Duration) 
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-time.After(interval):
-			collector.Collect(ctx)
+			_ = collector.Collect(ctx)
 		}
 	}
 }

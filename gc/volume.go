@@ -31,7 +31,7 @@ func (c *collector) collectVolumes(ctx context.Context) error {
 				Msg("volume is protected")
 			continue
 		}
-		if isExpired(v.Labels) == false {
+		if !isExpired(v.Labels) {
 			logger.Debug().
 				Str("name", v.Name).
 				Msg("volume not expired")
