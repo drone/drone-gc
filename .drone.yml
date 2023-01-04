@@ -1,157 +1,254 @@
----
 kind: pipeline
-type: docker
-name: build-linux
+type: vm
+name: testing
+platform:
+  os: linux
+  arch: amd64
+pool:
+  use: ubuntu
 
 steps:
-- name: build
-  image: golang:1.12
-  commands:
-  - go test ./...
-  - sh scripts/build.sh
-
-- name: publish_amd64
-  image: plugins/docker:18
-  settings:
-    auto_tag: "true"
-    auto_tag_suffix: linux-amd64
-    dockerfile: docker/Dockerfile.linux.amd64
-    username:
-      from_secret: docker_username
-    password:
-      from_secret: docker_password
-    repo: drone/gc
-  when:
-    event:
-    - push
-    - tag
-
-- image: plugins/docker:18
-  name: publish_arm64
-  settings:
-    auto_tag: "true"
-    auto_tag_suffix: linux-arm64
-    dockerfile: docker/Dockerfile.linux.arm64
-    password:
-      from_secret: docker_password
-    repo: drone/gc
-    username:
-      from_secret: docker_username
-  when:
-    event:
-    - push
-    - tag
-
-- name: publish_arm
-  image: plugins/docker:18
-  settings:
-    auto_tag: "true"
-    auto_tag_suffix: linux-arm
-    dockerfile: docker/Dockerfile.linux.arm
-    username:
-      from_secret: docker_username
-    password:
-      from_secret: docker_password
-    repo: drone/gc
-  when:
-    event:
-    - push
-    - tag
+  - name: lint
+    image: golang:1.19
+    pull: always
+    commands:
+      - go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+      - golangci-lint version
+      - golangci-lint run
+    volumes:
+      - name: gopath
+        path: "/go"
+  - name: test
+    image: golang:1.19
+    commands:
+      - go test -cover ./...
+    volumes:
+      - name: gopath
+        path: "/go"
+volumes:
+  - name: gopath
+    temp: {}
+trigger:
+  ref:
+    - refs/heads/master
+    - refs/tags/**
+    - refs/pull/**
 
 ---
 kind: pipeline
-type: ssh
-name: windows-1809-amd64
+type: vm
+name: linux-amd64
+platform:
+  os: linux
+  arch: amd64
+pool:
+  use: ubuntu
 
+steps:
+  - name: environment
+    image: golang:1.19
+    pull: always
+    environment:
+      CGO_ENABLED: "0"
+    commands:
+      - go version
+      - go env
+  - name: build
+    image: golang:1.19
+    environment:
+      CGO_ENABLED: "0"
+    commands:
+      - go build -v -ldflags "-X main.version=" -a -tags netgo -o release/linux/amd64/drone-gc .
+  - name: docker
+    image: plugins/docker
+    settings:
+      dockerfile: docker/Dockerfile.linux.amd64
+      repo: drone/gc
+      username:
+        from_secret: docker_username
+      password:
+        from_secret: docker_password
+      auto_tag: true
+      auto_tag_suffix: linux-amd64
+depends_on:
+  - testing
+trigger:
+  ref:
+    - refs/heads/master
+    - refs/tags/**
+    - refs/pull/**
+
+---
+kind: pipeline
+type: vm
+name: linux-arm64
+platform:
+  os: linux
+  arch: arm64
+pool:
+  use: ubuntu_arm64
+
+steps:
+  - name: environment
+    image: golang:1.19
+    pull: always
+    environment:
+      CGO_ENABLED: "0"
+    commands:
+      - go version
+      - go env
+  - name: build
+    image: golang:1.19
+    environment:
+      CGO_ENABLED: "0"
+    commands:
+      - go build -v -ldflags "-X main.version=" -a -tags netgo -o release/linux/arm64/drone-gc .
+  - name: docker
+    image: plugins/docker
+    settings:
+      dockerfile: docker/Dockerfile.linux.arm64
+      repo: drone/gc
+      username:
+        from_secret: docker_username
+      password:
+        from_secret: docker_password
+      auto_tag: true
+      auto_tag_suffix: linux-arm64
+depends_on:
+  - testing
+trigger:
+  ref:
+    - refs/heads/master
+    - refs/tags/**
+    - refs/pull/**
+
+---
+kind: pipeline
+type: vm
+name: windows-1809
 platform:
   os: windows
-
-server:
-  host:
-    from_secret: windows_server_1809
-  password:
-    from_secret: windows_password
-  user:
-    from_secret: windows_username
+  arch: amd64
+pool:
+  use: windows
 
 steps:
-- name: build
-  commands:
-  - powershell.exe scripts/build.ps1
-  - docker login -u $env:USERNAME -p $env:PASSWORD
-  - docker build -f docker/Dockerfile.windows.1809.amd64 -t drone/gc:windows-1809-amd64 .
-  - docker push drone/gc:windows-1809-amd64
-  environment:
-    PASSWORD:
-      from_secret: docker_password
-    USERNAME:
-      from_secret: docker_username
-
-trigger:
-  event:
-  - push
-
+  - name: environment
+    image: golang:1.19
+    pull: always
+    environment:
+      CGO_ENABLED: "0"
+    commands:
+      - go version
+      - go env
+  - name: build
+    image: golang:1.19
+    environment:
+      CGO_ENABLED: "0"
+    commands:
+      - go build -v -ldflags "-X main.version=" -a -tags netgo -o release/windows/amd64/drone-gc.exe .
+  - name: docker
+    image: plugins/docker
+    settings:
+      dockerfile: docker/Dockerfile.windows.1809
+      repo: drone/gc
+      username:
+        from_secret: docker_username
+      password:
+        from_secret: docker_password
+      auto_tag: true
+      auto_tag_suffix: windows-1809-amd64
+      daemon_off: true
+      purge: false
+    when:
+      ref:
+        - refs/heads/master
+        - refs/tags/**
 depends_on:
-- build-linux
+  - testing
+trigger:
+  ref:
+    - refs/heads/master
+    - refs/tags/**
+    - refs/pull/**
 
 ---
 kind: pipeline
-type: ssh
-name: windows-1903-amd64
-
+type: vm
+name: windows-ltsc2022
 platform:
   os: windows
+  arch: amd64
+pool:
+  use: windows-2022
 
-server:
-  host:
-    from_secret: windows_server_1903
-  password:
-    from_secret: windows_password
-  user:
-    from_secret: windows_username
-  
 steps:
-- name: build
-  commands:
-  - powershell.exe scripts/build.ps1
-  - docker login -u $env:USERNAME -p $env:PASSWORD
-  - docker build -f docker/Dockerfile.windows.1903.amd64 -t drone/gc:windows-1903-amd64 .
-  - docker push drone/gc:windows-1903-amd64
-  environment:
-    PASSWORD:
-      from_secret: docker_password
-    USERNAME:
-      from_secret: docker_username
-
-trigger:
-  event:
-  - push
-
+  - name: environment
+    image: golang:1.19
+    pull: always
+    environment:
+      CGO_ENABLED: "0"
+    commands:
+      - go version
+      - go env
+  - name: build
+    image: golang:1.19
+    environment:
+      CGO_ENABLED: "0"
+    commands:
+      - go build -v -ldflags "-X main.version=" -a -tags netgo -o release/windows/amd64/drone-gc.exe .
+  - name: docker
+    image: plugins/docker
+    settings:
+      dockerfile: docker/Dockerfile.windows.ltsc2022
+      repo: drone/gc
+      username:
+        from_secret: docker_username
+      password:
+        from_secret: docker_password
+      auto_tag: true
+      auto_tag_suffix: windows-ltsc2022-amd64
+      daemon_off: true
+      purge: false
+    when:
+      ref:
+        - refs/heads/master
+        - refs/tags/**
 depends_on:
-- build-linux
+  - testing
+trigger:
+  ref:
+    - refs/heads/master
+    - refs/tags/**
+    - refs/pull/**
 
 ---
 kind: pipeline
+type: vm
 name: manifest
-type: docker
-
-depends_on:
-- windows-1809-amd64
-- windows-1903-amd64
+platform:
+  os: linux
+  arch: amd64
+pool:
+  use: ubuntu
 
 steps:
-- name: manifest
-  image: plugins/manifest
-  settings:
-    spec: docker/manifest.tmpl
-    auto_tag: "true"
-    ignore_missing: "true"
-    password:
-      from_secret: docker_password
-    username:
-      from_secret: docker_username
-
+  - name: manifest
+    image: plugins/manifest
+    settings:
+      auto_tag: "true"
+      username:
+        from_secret: docker_username
+      password:
+        from_secret: docker_password
+      spec: docker/manifest.tmpl
+      ignore_missing: true
+depends_on:
+  - linux-amd64
+  - linux-arm64
+  - windows-1809
+  - windows-ltsc2022
 trigger:
-  event:
-  - push
-  - tag
+  ref:
+    - refs/heads/master
+    - refs/tags/**

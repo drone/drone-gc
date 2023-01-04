@@ -32,7 +32,7 @@ func (c *collector) collectNetworks(ctx context.Context) error {
 				Msg("network is protected")
 			continue
 		}
-		if isExpired(v.Labels) == false {
+		if !isExpired(v.Labels) {
 			logger.Debug().
 				Str("name", v.Name).
 				Msg("network not expired")

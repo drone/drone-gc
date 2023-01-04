@@ -39,7 +39,7 @@ func main() {
 			Msg("Cannot load configuration variables")
 	}
 
-	client, err := docker.NewEnvClient()
+	client, err := docker.NewClientWithOpts(nil)
 	if err != nil {
 		log.Fatal().Err(err).
 			Msg("Cannot create Docker client")
@@ -64,7 +64,7 @@ func main() {
 		gc.WithWhitelist(cfg.Containers),
 	)
 	if cfg.Once {
-		collector.Collect(ctx)
+		_ = collector.Collect(ctx)
 	} else {
 		log.Info().
 			Strs("ignore-containers", cfg.Containers).
@@ -73,7 +73,7 @@ func main() {
 			Str("interval", units.HumanDuration(cfg.Interval)).
 			Msg("starting the garbage collector")
 
-		gc.Schedule(ctx, collector, cfg.Interval)
+		_ = gc.Schedule(ctx, collector, cfg.Interval)
 	}
 }
 

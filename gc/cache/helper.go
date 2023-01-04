@@ -19,7 +19,7 @@ func Wrap(ctx context.Context, api docker.APIClient) docker.APIClient {
 		client: api,
 		cache:  c,
 	}
-	go l.listen(ctx)
+	go l.listen(ctx) // nolint: errcheck
 	return &client{
 		APIClient: api,
 		cache:     c,
