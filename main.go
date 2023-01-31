@@ -13,6 +13,7 @@ import (
 	"github.com/drone/drone-gc/gc/cache"
 	"github.com/drone/signal"
 
+	"github.com/docker/docker/client"
 	docker "github.com/docker/docker/client"
 	"github.com/docker/go-units"
 	"github.com/kelseyhightower/envconfig"
@@ -39,7 +40,7 @@ func main() {
 			Msg("Cannot load configuration variables")
 	}
 
-	client, err := docker.NewClientWithOpts(nil)
+	client, err := docker.NewClientWithOpts(client.FromEnv)
 	if err != nil {
 		log.Fatal().Err(err).
 			Msg("Cannot create Docker client")
