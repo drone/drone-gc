@@ -10,3 +10,4 @@ export CGO_ENABLED=0
 GOOS=linux GOARCH=amd64 go build -o release/linux/amd64/drone-gc github.com/drone/drone-gc
 GOOS=linux GOARCH=arm64 go build -o release/linux/arm64/drone-gc github.com/drone/drone-gc
 GOOS=linux GOARCH=arm   go build -o release/linux/arm/drone-gc   github.com/drone/drone-gc
+GOOS=linux GOARCH=s390x go build -o release/linux/s390x/drone-gc github.com/drone/drone-gc
